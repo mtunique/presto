@@ -177,7 +177,7 @@ public class AddExchanges
         @Override
         protected PlanWithProperties visitPlan(PlanNode node, PreferredProperties preferredProperties)
         {
-            return rebaseAndDeriveProperties(node, planChild(node, preferredProperties));
+            return rebaseAndDeriveProperties(node, planChild(node, preferredProperties)); // 直接传递
         }
 
         @Override
@@ -1214,12 +1214,12 @@ public class AddExchanges
             return new PlanWithProperties(result, deriveProperties(result, children.stream().map(PlanWithProperties::getProperties).collect(toList())));
         }
 
-        private PlanWithProperties withDerivedProperties(PlanNode node, ActualProperties inputProperties)
+        private PlanWithProperties withDerivedProperties(PlanNode node, ActualProperties inputProperties) // deriveDlvdProperties (p4 alg 1)
         {
             return new PlanWithProperties(node, deriveProperties(node, inputProperties));
         }
 
-        private ActualProperties deriveProperties(PlanNode result, ActualProperties inputProperties)
+        private ActualProperties deriveProperties(PlanNode result, ActualProperties inputProperties) // deriveDlvdProperties (p4 alg 1)
         {
             return deriveProperties(result, ImmutableList.of(inputProperties));
         }
