@@ -178,7 +178,7 @@ public final class Partitioning
                 continue;
             }
             if (!argument.isSymbolReference()) {
-                return false;
+                return false; // ??
             }
             if (!knownConstants.contains(argument.getSymbol()) && !columns.contains(argument.getSymbol())) {
                 return false;

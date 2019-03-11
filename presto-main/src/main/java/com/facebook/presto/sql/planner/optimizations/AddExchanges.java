@@ -245,7 +245,7 @@ public class AddExchanges
             else if (!child.getProperties().isStreamPartitionedOn(partitioningRequirement) && !child.getProperties().isNodePartitionedOn(partitioningRequirement)) {
                 child = withDerivedProperties(
                         partitionedExchange(idAllocator.getNextId(), REMOTE, child.getNode(), createPartitioning(node.getGroupingKeys()), node.getHashSymbol()),
-                        child.getProperties());
+                        child.getProperties());  // enforce
             }
             return rebaseAndDeriveProperties(node, child);
         }
@@ -1227,7 +1227,7 @@ public class AddExchanges
         private ActualProperties deriveProperties(PlanNode result, List<ActualProperties> inputProperties)
         {
             // TODO: move this logic to PlanSanityChecker once PropertyDerivations.deriveProperties fully supports local exchanges
-            ActualProperties outputProperties = PropertyDerivations.deriveProperties(result, inputProperties, metadata, session, types, parser);
+            ActualProperties outputProperties = PropertyDerivations.deriveProperties(result, inputProperties, metadata, session, types, parser); // real deriveDlvdProperties (p4 alg 1) (VI p7)
             verify(result instanceof SemiJoinNode || inputProperties.stream().noneMatch(ActualProperties::isNullsAndAnyReplicated) || outputProperties.isNullsAndAnyReplicated(),
                     "SemiJoinNode is the only node that can strip null replication");
             return outputProperties;

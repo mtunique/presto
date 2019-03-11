@@ -108,6 +108,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
+// VI p7 deriving required properties
 public class PropertyDerivations
 {
     private PropertyDerivations() {}
