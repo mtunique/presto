@@ -94,7 +94,7 @@ public final class LocalProperties
      * - Optional.empty(): the property was satisfied completely
      * - non-empty: the (simplified) property that was not satisfied
      */
-    public static <T> List<Optional<LocalProperty<T>>> match(List<LocalProperty<T>> actuals, List<LocalProperty<T>> desired) // 实际的可以多 (1) p5
+    public static <T> List<Optional<LocalProperty<T>>> match(List<LocalProperty<T>> actuals, List<LocalProperty<T>> desired) // mt: 包括 order
     {
         // After normalizing actuals, each symbol should only appear once
         PeekingIterator<LocalProperty<T>> actualIterator = peekingIterator(normalizeAndPrune(actuals).iterator());
@@ -103,11 +103,11 @@ public final class LocalProperties
         boolean consumeMoreActuals = true;
         List<Optional<LocalProperty<T>>> result = new ArrayList<>(desired.size());
         for (LocalProperty<T> desiredProperty : desired) {
-            while (consumeMoreActuals && actualIterator.hasNext() && desiredProperty.isSimplifiedBy(actualIterator.peek())) {
+            while (consumeMoreActuals && actualIterator.hasNext() && desiredProperty.isSimplifiedBy(actualIterator.peek())) { // mt: 实际的可以多 actual 冗余 (1) p5
                 constants.addAll(actualIterator.next().getColumns());
             }
-            Optional<LocalProperty<T>> simplifiedDesired = desiredProperty.withConstants(constants); //
-            consumeMoreActuals &= !simplifiedDesired.isPresent(); // Only continue processing actuals if all previous desired properties were fully satisfied  action 按顺序匹配 不成功就终止
+            Optional<LocalProperty<T>> simplifiedDesired = desiredProperty.withConstants(constants); // mt:
+            consumeMoreActuals &= !simplifiedDesired.isPresent(); // Only continue processing actuals if all previous desired properties were fully satisfied  mt: action 按顺序匹配 不成功就终止
             result.add(simplifiedDesired);
         }
         return result;
@@ -133,7 +133,7 @@ public final class LocalProperties
         List<Optional<LocalProperty<T>>> normalizedProperties = new ArrayList<>(localProperties.size());
         Set<T> constants = new HashSet<>();
         for (LocalProperty<T> localProperty : localProperties) {
-            normalizedProperties.add(localProperty.withConstants(constants)); // remove redundant
+            normalizedProperties.add(localProperty.withConstants(constants)); // mt: remove redundant
             constants.addAll(localProperty.getColumns());
         }
         return normalizedProperties;

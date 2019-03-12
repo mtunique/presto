@@ -108,7 +108,7 @@ public class ActualProperties
 
     public boolean isStreamPartitionedOn(Collection<Symbol> columns, boolean nullsAndAnyReplicated/* ? */)
     {
-        return global.isStreamPartitionedOn(columns, constants.keySet(), nullsAndAnyReplicated); // table vi 不考虑 local ?
+        return global.isStreamPartitionedOn(columns, constants.keySet(), nullsAndAnyReplicated); // mt: table vi 不考虑 local ?
     }
 
     public boolean isNodePartitionedOn(Collection<Symbol> columns)

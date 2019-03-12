@@ -432,7 +432,7 @@ public class AddExchanges
         {
             PlanWithProperties child = planChild(node, PreferredProperties.undistributed());
 
-            if (child.getProperties().isSingleNode()) { // table vi
+            if (child.getProperties().isSingleNode()) { // mt: table vi
                 // current plan so far is single node, so local properties are effectively global properties
                 // skip the SortNode if the local properties guarantee ordering on Sort keys
                 // TODO: This should be extracted as a separate optimizer once the planner is able to reason about the ordering of each operator
@@ -441,8 +441,8 @@ public class AddExchanges
                     desiredProperties.add(new SortingProperty<>(symbol, node.getOrderingScheme().getOrdering(symbol)));
                 }
 
-                if (LocalProperties.match(child.getProperties().getLocalProperties(), desiredProperties).stream() // vii p8
-                        .noneMatch(Optional::isPresent)) { // 都匹配上
+                if (LocalProperties.match(child.getProperties().getLocalProperties(), desiredProperties).stream() // mt: vii p8
+                        .noneMatch(Optional::isPresent)) { // mt: 都匹配上
                     return child;
                 }
             }
@@ -451,7 +451,7 @@ public class AddExchanges
                 child = planChild(node, PreferredProperties.any());
                 // insert round robin exchange to eliminate skewness issues
                 PlanNode source = roundRobinExchange(idAllocator.getNextId(), REMOTE, child.getNode());
-                return withDerivedProperties(  // add sort (
+                return withDerivedProperties(  // mt: add sort (
                         mergingExchange(
                                 idAllocator.getNextId(),
                                 REMOTE,
@@ -464,7 +464,7 @@ public class AddExchanges
             }
 
             if (!child.getProperties().isSingleNode()) {
-                child = withDerivedProperties(  // gather sort ?
+                child = withDerivedProperties(  // mt: gather sort ?
                         gatheringExchange(idAllocator.getNextId(), REMOTE, child.getNode()),
                         child.getProperties());
             }
@@ -748,7 +748,7 @@ public class AddExchanges
             return buildJoin(node, left, right, JoinNode.DistributionType.PARTITIONED);
         }
 
-        private PlanWithProperties planReplicatedJoin(JoinNode node, PlanWithProperties left)  // broad cast right ?
+        private PlanWithProperties planReplicatedJoin(JoinNode node, PlanWithProperties left)  // mt: broad cast right ?
         {
             // Broadcast Join
             PlanWithProperties right = node.getRight().accept(this, PreferredProperties.any());

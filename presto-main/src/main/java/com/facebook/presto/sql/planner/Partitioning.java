@@ -114,7 +114,7 @@ public final class Partitioning
             Function<Symbol, Optional<NullableValue>> rightConstantMapping,
             Metadata metadata,
             Session session)
-    {
+    { // p8 table vi hash join partitioned
         if (!handle.equals(right.handle) && !metadata.getCommonPartitioning(session, handle, right.handle).isPresent()) {
             return false;
         }
@@ -139,7 +139,7 @@ public final class Partitioning
             Function<Symbol, Optional<NullableValue>> leftConstantMapping,
             ArgumentBinding rightArgument,
             Function<Symbol, Optional<NullableValue>> rightConstantMapping,
-            Function<Symbol, Set<Symbol>> leftToRightMappings)
+            Function<Symbol, Set<Symbol>> leftToRightMappings) // mt: p5 table 1 line 4  列相同 (且等价?)
     {
         if (leftArgument.isSymbolReference()) {
             if (rightArgument.isSymbolReference()) {
@@ -152,7 +152,7 @@ public final class Partitioning
                 // Normally, this would be a false condition, but if we happen to have an external
                 // mapping from the symbol to a constant value and that constant value matches the
                 // right value, then we are co-partitioned.
-                Optional<NullableValue> leftConstant = leftConstantMapping.apply(leftArgument.getSymbol());  // p8 blue ?
+                Optional<NullableValue> leftConstant = leftConstantMapping.apply(leftArgument.getSymbol());  // mt: p8 blue ?
                 return leftConstant.isPresent() && leftConstant.get().equals(rightArgument.getConstant());
             }
         }
@@ -179,7 +179,7 @@ public final class Partitioning
                 continue;
             }
             if (!argument.isSymbolReference()) {
-                return false; // ??
+                return false; // mt: ??
             }
             if (!knownConstants.contains(argument.getSymbol()) && !columns.contains(argument.getSymbol())) {
                 return false;

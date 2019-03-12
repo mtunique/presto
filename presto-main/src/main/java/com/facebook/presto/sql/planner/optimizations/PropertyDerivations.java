@@ -618,7 +618,7 @@ public class PropertyDerivations
                     types);
 
             Map<Symbol, NullableValue> constants = new HashMap<>(properties.getConstants());
-            constants.putAll(extractFixedValues(decomposedPredicate.getTupleDomain()).orElse(ImmutableMap.of())); // 加上 predicate 的常量 ?
+            constants.putAll(extractFixedValues(decomposedPredicate.getTupleDomain()).orElse(ImmutableMap.of())); // mt: 加上 predicate 的常量 ?
 
             return ActualProperties.builderFrom(properties)
                     .constants(constants)

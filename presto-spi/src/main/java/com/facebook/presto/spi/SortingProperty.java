@@ -79,7 +79,7 @@ public final class SortingProperty<E>
     @Override
     public boolean isSimplifiedBy(LocalProperty<E> known)
     {
-        return known instanceof ConstantProperty || known.equals(this);
+        return known instanceof ConstantProperty || known.equals(this); // mt: p5 Wang et, al. sort only one column
     }
 
     @Override
