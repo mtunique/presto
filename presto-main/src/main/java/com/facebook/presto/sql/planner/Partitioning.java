@@ -152,7 +152,7 @@ public final class Partitioning
                 // Normally, this would be a false condition, but if we happen to have an external
                 // mapping from the symbol to a constant value and that constant value matches the
                 // right value, then we are co-partitioned.
-                Optional<NullableValue> leftConstant = leftConstantMapping.apply(leftArgument.getSymbol());
+                Optional<NullableValue> leftConstant = leftConstantMapping.apply(leftArgument.getSymbol());  // p8 blue ?
                 return leftConstant.isPresent() && leftConstant.get().equals(rightArgument.getConstant());
             }
         }
@@ -171,6 +171,7 @@ public final class Partitioning
 
     public boolean isPartitionedOn(Collection<Symbol> columns, Set<Symbol> knownConstants)
     {
+        // (2) p6
         for (ArgumentBinding argument : arguments) {
             // partitioned on (k_1, k_2, ..., k_n) => partitioned on (k_1, k_2, ..., k_n, k_n+1, ...)
             // can safely ignore all constant columns when comparing partition properties

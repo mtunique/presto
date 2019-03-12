@@ -63,6 +63,7 @@ public class ActualProperties
 
         this.global = global;
 
+        // 为什么只是 leading
         // The constants field implies a ConstantProperty in localProperties (but not vice versa).
         // Let's make sure to include the constants into the local constant properties.
         Set<Symbol> localConstants = LocalProperties.extractLeadingConstants(localProperties);
@@ -105,9 +106,9 @@ public class ActualProperties
         return isStreamPartitionedOn(columns, false);
     }
 
-    public boolean isStreamPartitionedOn(Collection<Symbol> columns, boolean nullsAndAnyReplicated)
+    public boolean isStreamPartitionedOn(Collection<Symbol> columns, boolean nullsAndAnyReplicated/* ? */)
     {
-        return global.isStreamPartitionedOn(columns, constants.keySet(), nullsAndAnyReplicated);
+        return global.isStreamPartitionedOn(columns, constants.keySet(), nullsAndAnyReplicated); // table vi 不考虑 local ?
     }
 
     public boolean isNodePartitionedOn(Collection<Symbol> columns)
@@ -446,7 +447,7 @@ public class ActualProperties
 
         private boolean isStreamPartitionedOn(Collection<Symbol> columns, Set<Symbol> constants, boolean nullsAndAnyReplicated)
         {
-            return streamPartitioning.isPresent() && streamPartitioning.get().isPartitionedOn(columns, constants) && this.nullsAndAnyReplicated == nullsAndAnyReplicated;
+            return streamPartitioning.isPresent() && streamPartitioning.get().isPartitionedOn(columns, constants) && this.nullsAndAnyReplicated == nullsAndAnyReplicated;  // table vi
         }
 
         /**

@@ -242,10 +242,10 @@ public class AddExchanges
                         gatheringExchange(idAllocator.getNextId(), REMOTE, child.getNode()),
                         child.getProperties());
             }
-            else if (!child.getProperties().isStreamPartitionedOn(partitioningRequirement) && !child.getProperties().isNodePartitionedOn(partitioningRequirement)) {
+            else if (!child.getProperties().isStreamPartitionedOn(partitioningRequirement) && !child.getProperties().isNodePartitionedOn(partitioningRequirement)) { // (alg 1 property match)
                 child = withDerivedProperties(
                         partitionedExchange(idAllocator.getNextId(), REMOTE, child.getNode(), createPartitioning(node.getGroupingKeys()), node.getHashSymbol()),
-                        child.getProperties());  // enforce
+                        child.getProperties());  // enforce (p9 alg 2)
             }
             return rebaseAndDeriveProperties(node, child);
         }
@@ -432,7 +432,7 @@ public class AddExchanges
         {
             PlanWithProperties child = planChild(node, PreferredProperties.undistributed());
 
-            if (child.getProperties().isSingleNode()) {
+            if (child.getProperties().isSingleNode()) { // table vi
                 // current plan so far is single node, so local properties are effectively global properties
                 // skip the SortNode if the local properties guarantee ordering on Sort keys
                 // TODO: This should be extracted as a separate optimizer once the planner is able to reason about the ordering of each operator
@@ -441,8 +441,8 @@ public class AddExchanges
                     desiredProperties.add(new SortingProperty<>(symbol, node.getOrderingScheme().getOrdering(symbol)));
                 }
 
-                if (LocalProperties.match(child.getProperties().getLocalProperties(), desiredProperties).stream()
-                        .noneMatch(Optional::isPresent)) {
+                if (LocalProperties.match(child.getProperties().getLocalProperties(), desiredProperties).stream() // vii p8
+                        .noneMatch(Optional::isPresent)) { // 都匹配上
                     return child;
                 }
             }
@@ -451,7 +451,7 @@ public class AddExchanges
                 child = planChild(node, PreferredProperties.any());
                 // insert round robin exchange to eliminate skewness issues
                 PlanNode source = roundRobinExchange(idAllocator.getNextId(), REMOTE, child.getNode());
-                return withDerivedProperties(
+                return withDerivedProperties(  // add sort (
                         mergingExchange(
                                 idAllocator.getNextId(),
                                 REMOTE,
@@ -464,7 +464,7 @@ public class AddExchanges
             }
 
             if (!child.getProperties().isSingleNode()) {
-                child = withDerivedProperties(
+                child = withDerivedProperties(  // gather sort ?
                         gatheringExchange(idAllocator.getNextId(), REMOTE, child.getNode()),
                         child.getProperties());
             }
@@ -670,7 +670,7 @@ public class AddExchanges
                     .map(JoinNode.EquiJoinClause::getRight)
                     .collect(toImmutableList());
 
-            JoinNode.DistributionType distributionType = node.getDistributionType().orElseThrow(() -> new IllegalArgumentException("distributionType not yet set"));
+            JoinNode.DistributionType distributionType = node.getDistributionType().orElseThrow(() -> new IllegalArgumentException("distributionType not yet set")); // 提前确定了？WTF
 
             if (distributionType == JoinNode.DistributionType.REPLICATED) {
                 PlanWithProperties left = node.getLeft().accept(this, PreferredProperties.any());
@@ -707,7 +707,10 @@ public class AddExchanges
                     right = withDerivedProperties(
                             partitionedExchange(idAllocator.getNextId(), REMOTE, right.getNode(), new PartitioningScheme(rightPartitioning, right.getNode().getOutputSymbols())),
                             right.getProperties());
+                    // left match right not match
                 }
+
+                // both match
             }
             else {
                 right = node.getRight().accept(this, PreferredProperties.partitioned(ImmutableSet.copyOf(rightSymbols)));
@@ -717,6 +720,8 @@ public class AddExchanges
                     left = withDerivedProperties(
                             partitionedExchange(idAllocator.getNextId(), REMOTE, left.getNode(), new PartitioningScheme(leftPartitioning, left.getNode().getOutputSymbols())),
                             left.getProperties());
+
+                    // left not match right match
                 }
                 else {
                     left = withDerivedProperties(
@@ -725,10 +730,12 @@ public class AddExchanges
                     right = withDerivedProperties(
                             partitionedExchange(idAllocator.getNextId(), REMOTE, right.getNode(), createPartitioning(rightSymbols), Optional.empty()),
                             right.getProperties());
+
+                    // both not match
                 }
             }
 
-            verify(left.getProperties().isCompatibleTablePartitioningWith(right.getProperties(), leftToRight::get, metadata, session));
+            verify(left.getProperties().isCompatibleTablePartitioningWith(right.getProperties(), leftToRight::get, metadata, session)); // enforce 后 都 match
 
             // if colocated joins are disabled, force redistribute when using a custom partitioning
             if (!isColocatedJoinEnabled(session) && hasMultipleSources(left.getNode(), right.getNode())) {
@@ -741,7 +748,7 @@ public class AddExchanges
             return buildJoin(node, left, right, JoinNode.DistributionType.PARTITIONED);
         }
 
-        private PlanWithProperties planReplicatedJoin(JoinNode node, PlanWithProperties left)
+        private PlanWithProperties planReplicatedJoin(JoinNode node, PlanWithProperties left)  // broad cast right ?
         {
             // Broadcast Join
             PlanWithProperties right = node.getRight().accept(this, PreferredProperties.any());
@@ -1198,7 +1205,7 @@ public class AddExchanges
             return getOnlyElement(node.getSources()).accept(this, preferredProperties);
         }
 
-        private PlanWithProperties rebaseAndDeriveProperties(PlanNode node, PlanWithProperties child)
+        private PlanWithProperties rebaseAndDeriveProperties(PlanNode node, PlanWithProperties child) // child 换成完成的(alg 1 DDP 的入参) 然后推导 Prop (alg 1)
         {
             return withDerivedProperties(
                     ChildReplacer.replaceChildren(node, ImmutableList.of(child.getNode())),

@@ -177,7 +177,7 @@ public class PropertyDerivations
         public ActualProperties visitOutput(OutputNode node, List<ActualProperties> inputProperties)
         {
             return Iterables.getOnlyElement(inputProperties)
-                    .translate(column -> PropertyDerivations.filterIfMissing(node.getOutputSymbols(), column));
+                    .translate(column -> PropertyDerivations.filterIfMissing(node.getOutputSymbols(), column)); // 多做了 agg order 就去掉
         }
 
         @Override
@@ -532,10 +532,11 @@ public class PropertyDerivations
         }
 
         @Override
-        public ActualProperties visitExchange(ExchangeNode node, List<ActualProperties> inputProperties)
+        public ActualProperties visitExchange(ExchangeNode node, List<ActualProperties> inputProperties) // V p6 差别蛮大 因为 没那么多种类 没分那么多阶段
         {
             checkArgument(node.getScope() != REMOTE || inputProperties.stream().noneMatch(ActualProperties::isNullsAndAnyReplicated), "Null-and-any replicated inputs should not be remotely exchanged");
 
+            // 合并所有 const
             Set<Map.Entry<Symbol, NullableValue>> entries = null;
             for (int sourceIndex = 0; sourceIndex < node.getSources().size(); sourceIndex++) {
                 Map<Symbol, Symbol> inputToOutput = exchangeInputToOutput(node, sourceIndex);
@@ -548,6 +549,7 @@ public class PropertyDerivations
             Map<Symbol, NullableValue> constants = entries.stream()
                     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+            // local prop order 不变 (没添加 group prop)
             ImmutableList.Builder<SortingProperty<Symbol>> localProperties = ImmutableList.builder();
             if (node.getOrderingScheme().isPresent()) {
                 node.getOrderingScheme().get().getOrderBy().stream()
@@ -556,7 +558,7 @@ public class PropertyDerivations
             }
 
             // Local exchanges are only created in AddLocalExchanges, at the end of optimization, and
-            // local exchanges do not produce all global properties as represented by ActualProperties.
+            // local exchanges do not produce all global properties as represented by ActualProperties. 不产生 global prop
             // This is acceptable because AddLocalExchanges does not use global properties and is only
             // interested in the local properties.
             // However, for the purpose of validation, some global properties (single-node vs distributed)
@@ -582,10 +584,10 @@ public class PropertyDerivations
                     boolean coordinatorOnly = node.getPartitioningScheme().getPartitioning().getHandle().isCoordinatorOnly();
                     return ActualProperties.builder()
                             .global(coordinatorOnly ? coordinatorSingleStreamPartition() : singleStreamPartition())
-                            .local(localProperties.build())
+                            .local(localProperties.build())  // local 不变
                             .constants(constants)
                             .build();
-                case REPARTITION:
+                case REPARTITION: // 没考虑 local prop 不变的情况  table V p7
                     return ActualProperties.builder()
                             .global(partitionedOn(
                                     node.getPartitioningScheme().getPartitioning(),
@@ -616,7 +618,7 @@ public class PropertyDerivations
                     types);
 
             Map<Symbol, NullableValue> constants = new HashMap<>(properties.getConstants());
-            constants.putAll(extractFixedValues(decomposedPredicate.getTupleDomain()).orElse(ImmutableMap.of()));
+            constants.putAll(extractFixedValues(decomposedPredicate.getTupleDomain()).orElse(ImmutableMap.of())); // 加上 predicate 的常量 ?
 
             return ActualProperties.builderFrom(properties)
                     .constants(constants)
@@ -630,9 +632,9 @@ public class PropertyDerivations
 
             Map<Symbol, Symbol> identities = computeIdentityTranslations(node.getAssignments().getMap());
 
-            ActualProperties translatedProperties = properties.translate(column -> Optional.ofNullable(identities.get(column)), expression -> rewriteExpression(node.getAssignments().getMap(), expression));
+            ActualProperties translatedProperties = properties.translate(column -> Optional.ofNullable(identities.get(column)), expression -> rewriteExpression(node.getAssignments().getMap(), expression)); // prop project 下
 
-            // Extract additional constants
+            // Extract additional constants ///
             Map<Symbol, NullableValue> constants = new HashMap<>();
             for (Map.Entry<Symbol, Expression> assignment : node.getAssignments().entrySet()) {
                 Expression expression = assignment.getValue();

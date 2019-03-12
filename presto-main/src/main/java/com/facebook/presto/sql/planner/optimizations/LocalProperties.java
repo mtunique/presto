@@ -94,7 +94,7 @@ public final class LocalProperties
      * - Optional.empty(): the property was satisfied completely
      * - non-empty: the (simplified) property that was not satisfied
      */
-    public static <T> List<Optional<LocalProperty<T>>> match(List<LocalProperty<T>> actuals, List<LocalProperty<T>> desired)
+    public static <T> List<Optional<LocalProperty<T>>> match(List<LocalProperty<T>> actuals, List<LocalProperty<T>> desired) // 实际的可以多 (1) p5
     {
         // After normalizing actuals, each symbol should only appear once
         PeekingIterator<LocalProperty<T>> actualIterator = peekingIterator(normalizeAndPrune(actuals).iterator());
@@ -106,8 +106,8 @@ public final class LocalProperties
             while (consumeMoreActuals && actualIterator.hasNext() && desiredProperty.isSimplifiedBy(actualIterator.peek())) {
                 constants.addAll(actualIterator.next().getColumns());
             }
-            Optional<LocalProperty<T>> simplifiedDesired = desiredProperty.withConstants(constants);
-            consumeMoreActuals &= !simplifiedDesired.isPresent(); // Only continue processing actuals if all previous desired properties were fully satisfied
+            Optional<LocalProperty<T>> simplifiedDesired = desiredProperty.withConstants(constants); //
+            consumeMoreActuals &= !simplifiedDesired.isPresent(); // Only continue processing actuals if all previous desired properties were fully satisfied  action 按顺序匹配 不成功就终止
             result.add(simplifiedDesired);
         }
         return result;
@@ -133,7 +133,7 @@ public final class LocalProperties
         List<Optional<LocalProperty<T>>> normalizedProperties = new ArrayList<>(localProperties.size());
         Set<T> constants = new HashSet<>();
         for (LocalProperty<T> localProperty : localProperties) {
-            normalizedProperties.add(localProperty.withConstants(constants));
+            normalizedProperties.add(localProperty.withConstants(constants)); // remove redundant
             constants.addAll(localProperty.getColumns());
         }
         return normalizedProperties;
