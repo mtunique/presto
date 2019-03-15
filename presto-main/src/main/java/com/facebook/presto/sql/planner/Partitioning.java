@@ -171,7 +171,7 @@ public final class Partitioning
 
     public boolean isPartitionedOn(Collection<Symbol> columns, Set<Symbol> knownConstants)
     {
-        // (2) p6
+        // mt: (2) p6
         for (ArgumentBinding argument : arguments) {
             // partitioned on (k_1, k_2, ..., k_n) => partitioned on (k_1, k_2, ..., k_n, k_n+1, ...)
             // can safely ignore all constant columns when comparing partition properties

@@ -63,7 +63,7 @@ public class ActualProperties
 
         this.global = global;
 
-        // 为什么只是 leading
+        // mt: 为什么只是 leading
         // The constants field implies a ConstantProperty in localProperties (but not vice versa).
         // Let's make sure to include the constants into the local constant properties.
         Set<Symbol> localConstants = LocalProperties.extractLeadingConstants(localProperties);

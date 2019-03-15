@@ -108,7 +108,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
-// VI p7 deriving required properties
+// mt: VI p7 deriving required properties
 public class PropertyDerivations
 {
     private PropertyDerivations() {}
@@ -177,7 +177,7 @@ public class PropertyDerivations
         public ActualProperties visitOutput(OutputNode node, List<ActualProperties> inputProperties)
         {
             return Iterables.getOnlyElement(inputProperties)
-                    .translate(column -> PropertyDerivations.filterIfMissing(node.getOutputSymbols(), column)); // 多做了 agg order 就去掉
+                    .translate(column -> PropertyDerivations.filterIfMissing(node.getOutputSymbols(), column)); // mt: 多做了 agg order 就去掉
         }
 
         @Override
@@ -532,11 +532,11 @@ public class PropertyDerivations
         }
 
         @Override
-        public ActualProperties visitExchange(ExchangeNode node, List<ActualProperties> inputProperties) // V p6 差别蛮大 因为 没那么多种类 没分那么多阶段
+        public ActualProperties visitExchange(ExchangeNode node, List<ActualProperties> inputProperties) // mt: V p6 差别蛮大 因为 没那么多种类 没分那么多阶段?
         {
             checkArgument(node.getScope() != REMOTE || inputProperties.stream().noneMatch(ActualProperties::isNullsAndAnyReplicated), "Null-and-any replicated inputs should not be remotely exchanged");
 
-            // 合并所有 const
+            // mt: 合并所有 const
             Set<Map.Entry<Symbol, NullableValue>> entries = null;
             for (int sourceIndex = 0; sourceIndex < node.getSources().size(); sourceIndex++) {
                 Map<Symbol, Symbol> inputToOutput = exchangeInputToOutput(node, sourceIndex);
@@ -549,7 +549,7 @@ public class PropertyDerivations
             Map<Symbol, NullableValue> constants = entries.stream()
                     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            // local prop order 不变 (没添加 group prop)
+            // mt: local prop order 不变 (没添加 group prop)
             ImmutableList.Builder<SortingProperty<Symbol>> localProperties = ImmutableList.builder();
             if (node.getOrderingScheme().isPresent()) {
                 node.getOrderingScheme().get().getOrderBy().stream()
@@ -587,7 +587,7 @@ public class PropertyDerivations
                             .local(localProperties.build())  // local 不变
                             .constants(constants)
                             .build();
-                case REPARTITION: // 没考虑 local prop 不变的情况  table V p7
+                case REPARTITION: // mt: 没考虑 local prop 不变的情况  table V p7
                     return ActualProperties.builder()
                             .global(partitionedOn(
                                     node.getPartitioningScheme().getPartitioning(),
@@ -632,9 +632,9 @@ public class PropertyDerivations
 
             Map<Symbol, Symbol> identities = computeIdentityTranslations(node.getAssignments().getMap());
 
-            ActualProperties translatedProperties = properties.translate(column -> Optional.ofNullable(identities.get(column)), expression -> rewriteExpression(node.getAssignments().getMap(), expression)); // prop project 下
+            ActualProperties translatedProperties = properties.translate(column -> Optional.ofNullable(identities.get(column)), expression -> rewriteExpression(node.getAssignments().getMap(), expression)); // mt: prop project 下
 
-            // Extract additional constants ///
+            // Extract additional constants /// mt:  todo
             Map<Symbol, NullableValue> constants = new HashMap<>();
             for (Map.Entry<Symbol, Expression> assignment : node.getAssignments().entrySet()) {
                 Expression expression = assignment.getValue();

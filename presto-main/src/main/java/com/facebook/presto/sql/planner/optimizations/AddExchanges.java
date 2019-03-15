@@ -177,7 +177,7 @@ public class AddExchanges
         @Override
         protected PlanWithProperties visitPlan(PlanNode node, PreferredProperties preferredProperties)
         {
-            return rebaseAndDeriveProperties(node, planChild(node, preferredProperties)); // 直接传递
+            return rebaseAndDeriveProperties(node, planChild(node, preferredProperties)); // mt: 直接传递
         }
 
         @Override
@@ -226,7 +226,7 @@ public class AddExchanges
             PreferredProperties preferredProperties = preferSingleNode ? PreferredProperties.undistributed() : PreferredProperties.any();
 
             if (!node.getGroupingKeys().isEmpty()) {
-                preferredProperties = PreferredProperties.partitionedWithLocal(partitioningRequirement, grouped(node.getGroupingKeys()))
+                preferredProperties = PreferredProperties.partitionedWithLocal(partitioningRequirement, grouped(node.getGroupingKeys())) // mt: p8 table VI hash agg
                         .mergeWithParent(parentPreferredProperties);
             }
 
@@ -242,10 +242,10 @@ public class AddExchanges
                         gatheringExchange(idAllocator.getNextId(), REMOTE, child.getNode()),
                         child.getProperties());
             }
-            else if (!child.getProperties().isStreamPartitionedOn(partitioningRequirement) && !child.getProperties().isNodePartitionedOn(partitioningRequirement)) { // (alg 1 property match)
+            else if (!child.getProperties().isStreamPartitionedOn(partitioningRequirement) && !child.getProperties().isNodePartitionedOn(partitioningRequirement)) { // mt: (alg 1 property match)
                 child = withDerivedProperties(
                         partitionedExchange(idAllocator.getNextId(), REMOTE, child.getNode(), createPartitioning(node.getGroupingKeys()), node.getHashSymbol()),
-                        child.getProperties());  // enforce (p9 alg 2)
+                        child.getProperties());  // mt: enforce (p9 alg 2)
             }
             return rebaseAndDeriveProperties(node, child);
         }
@@ -511,7 +511,7 @@ public class AddExchanges
         public PlanWithProperties visitFilter(FilterNode node, PreferredProperties preferredProperties)
         {
             if (node.getSource() instanceof TableScanNode) {
-                return planTableScan((TableScanNode) node.getSource(), node.getPredicate(), preferredProperties);
+                return planTableScan((TableScanNode) node.getSource(), node.getPredicate(), preferredProperties); // 下推
             }
 
             return rebaseAndDeriveProperties(node, planChild(node, preferredProperties));
@@ -707,10 +707,10 @@ public class AddExchanges
                     right = withDerivedProperties(
                             partitionedExchange(idAllocator.getNextId(), REMOTE, right.getNode(), new PartitioningScheme(rightPartitioning, right.getNode().getOutputSymbols())),
                             right.getProperties());
-                    // left match right not match
+                    // mt:  left match right not match
                 }
 
-                // both match
+                // mt: both match
             }
             else {
                 right = node.getRight().accept(this, PreferredProperties.partitioned(ImmutableSet.copyOf(rightSymbols)));
@@ -721,7 +721,7 @@ public class AddExchanges
                             partitionedExchange(idAllocator.getNextId(), REMOTE, left.getNode(), new PartitioningScheme(leftPartitioning, left.getNode().getOutputSymbols())),
                             left.getProperties());
 
-                    // left not match right match
+                    // mt: left not match right match
                 }
                 else {
                     left = withDerivedProperties(
@@ -731,11 +731,11 @@ public class AddExchanges
                             partitionedExchange(idAllocator.getNextId(), REMOTE, right.getNode(), createPartitioning(rightSymbols), Optional.empty()),
                             right.getProperties());
 
-                    // both not match
+                    // mt: both not match
                 }
             }
 
-            verify(left.getProperties().isCompatibleTablePartitioningWith(right.getProperties(), leftToRight::get, metadata, session)); // enforce 后 都 match
+            verify(left.getProperties().isCompatibleTablePartitioningWith(right.getProperties(), leftToRight::get, metadata, session)); // mt: enforce 后 都 match
 
             // if colocated joins are disabled, force redistribute when using a custom partitioning
             if (!isColocatedJoinEnabled(session) && hasMultipleSources(left.getNode(), right.getNode())) {
@@ -1205,7 +1205,7 @@ public class AddExchanges
             return getOnlyElement(node.getSources()).accept(this, preferredProperties);
         }
 
-        private PlanWithProperties rebaseAndDeriveProperties(PlanNode node, PlanWithProperties child) // child 换成完成的(alg 1 DDP 的入参) 然后推导 Prop (alg 1)
+        private PlanWithProperties rebaseAndDeriveProperties(PlanNode node, PlanWithProperties child) // mt: child 换成完成的(alg 1 DDP 的入参) 然后推导 Prop (alg 1)
         {
             return withDerivedProperties(
                     ChildReplacer.replaceChildren(node, ImmutableList.of(child.getNode())),
@@ -1221,12 +1221,12 @@ public class AddExchanges
             return new PlanWithProperties(result, deriveProperties(result, children.stream().map(PlanWithProperties::getProperties).collect(toList())));
         }
 
-        private PlanWithProperties withDerivedProperties(PlanNode node, ActualProperties inputProperties) // deriveDlvdProperties (p4 alg 1)
+        private PlanWithProperties withDerivedProperties(PlanNode node, ActualProperties inputProperties) // mt: deriveDlvdProperties (p4 alg 1)
         {
             return new PlanWithProperties(node, deriveProperties(node, inputProperties));
         }
 
-        private ActualProperties deriveProperties(PlanNode result, ActualProperties inputProperties) // deriveDlvdProperties (p4 alg 1)
+        private ActualProperties deriveProperties(PlanNode result, ActualProperties inputProperties) // mt: deriveDlvdProperties (p4 alg 1)
         {
             return deriveProperties(result, ImmutableList.of(inputProperties));
         }
@@ -1234,7 +1234,7 @@ public class AddExchanges
         private ActualProperties deriveProperties(PlanNode result, List<ActualProperties> inputProperties)
         {
             // TODO: move this logic to PlanSanityChecker once PropertyDerivations.deriveProperties fully supports local exchanges
-            ActualProperties outputProperties = PropertyDerivations.deriveProperties(result, inputProperties, metadata, session, types, parser); // real deriveDlvdProperties (p4 alg 1) (VI p7)
+            ActualProperties outputProperties = PropertyDerivations.deriveProperties(result, inputProperties, metadata, session, types, parser); // mt: real deriveDlvdProperties (p4 alg 1) (VI p7)
             verify(result instanceof SemiJoinNode || inputProperties.stream().noneMatch(ActualProperties::isNullsAndAnyReplicated) || outputProperties.isNullsAndAnyReplicated(),
                     "SemiJoinNode is the only node that can strip null replication");
             return outputProperties;
@@ -1283,8 +1283,8 @@ public class AddExchanges
             List<Optional<LocalProperty<Symbol>>> matchLayout2 = matchCache.getUnchecked(actual2.getLocalProperties());
 
             return ComparisonChain.start()
-                    .compareTrueFirst(hasLocalOptimization(preferred.getLocalProperties(), matchLayout1), hasLocalOptimization(preferred.getLocalProperties(), matchLayout2))
-                    .compareTrueFirst(meetsPartitioningRequirements(preferred, actual1), meetsPartitioningRequirements(preferred, actual2))
+                    .compareTrueFirst(hasLocalOptimization(preferred.getLocalProperties(), matchLayout1), hasLocalOptimization(preferred.getLocalProperties(), matchLayout2)) // mt: local prop 一模一样
+                    .compareTrueFirst(meetsPartitioningRequirements(preferred, actual1), meetsPartitioningRequirements(preferred, actual2)) // mt: 都满足 没 cache
                     .compare(matchLayout1, matchLayout2, matchedLayoutPreference())
                     .result();
         };
@@ -1312,7 +1312,7 @@ public class AddExchanges
         if (!preferredGlobal.getPartitioningProperties().isPresent()) {
             return !actual.isSingleNode();
         }
-        return actual.isStreamPartitionedOn(preferredGlobal.getPartitioningProperties().get().getPartitioningColumns());
+        return actual.isStreamPartitionedOn(preferredGlobal.getPartitioningProperties().get().getPartitioningColumns()); // match 就可以
     }
 
     // Prefer the match result that satisfied the most requirements
