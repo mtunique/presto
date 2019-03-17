@@ -295,9 +295,9 @@ public class PropertyDerivations
         {
             ActualProperties properties = Iterables.getOnlyElement(inputProperties);
 
-            ActualProperties translated = properties.translate(symbol -> node.getGroupingKeys().contains(symbol) ? Optional.of(symbol) : Optional.empty());
+            ActualProperties translated = properties.translate(symbol -> node.getGroupingKeys().contains(symbol) ? Optional.of(symbol) : Optional.empty()); // mt: local 是与group by key 的交集
 
-            return ActualProperties.builderFrom(translated)
+            return ActualProperties.builderFrom(translated) // mt: global
                     .local(LocalProperties.grouped(node.getGroupingKeys()))
                     .build();
         }
@@ -634,7 +634,7 @@ public class PropertyDerivations
 
             ActualProperties translatedProperties = properties.translate(column -> Optional.ofNullable(identities.get(column)), expression -> rewriteExpression(node.getAssignments().getMap(), expression)); // mt: prop project 下
 
-            // Extract additional constants /// mt:  todo
+            // Extract additional constants /// mt: 提取出确定为const的字段
             Map<Symbol, NullableValue> constants = new HashMap<>();
             for (Map.Entry<Symbol, Expression> assignment : node.getAssignments().entrySet()) {
                 Expression expression = assignment.getValue();

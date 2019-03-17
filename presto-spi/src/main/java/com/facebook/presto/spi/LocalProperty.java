@@ -46,7 +46,7 @@ public interface LocalProperty<E>
     /**
      * Simplfies this LocalProperty provided that the specified inputs are constants
      */
-    default Optional<LocalProperty<E>> withConstants(Set<E> constants)
+    default Optional<LocalProperty<E>> withConstants(Set<E> constants) // 简化 prop
     {
         Set<E> set = new LinkedHashSet<>(getColumns());
         set.removeAll(constants);

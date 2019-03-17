@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
 class PreferredProperties
 {
     private final Optional<Global> globalProperties;
-    private final List<LocalProperty<Symbol>> localProperties;
+    private final List<LocalProperty<Symbol>> localProperties; // mt: {A1, A2, A3}
 
     private PreferredProperties(
             Optional<Global> globalProperties,
@@ -49,7 +49,7 @@ class PreferredProperties
         this.localProperties = ImmutableList.copyOf(localProperties);
     }
 
-    public static PreferredProperties any()
+    public static PreferredProperties any() // p7 non-partitioned 没放在 global 的prop中表示 而是 global prop 为 null，不会有global 是 null prop 不是null的
     {
         return builder().build();
     }
@@ -248,16 +248,16 @@ class PreferredProperties
             return partitioningProperties;
         }
 
-        public Global mergeWithParent(Global parent)
+        public Global mergeWithParent(Global parent) // 总归以当前为准
         {
             if (distributed != parent.distributed) {
-                return this;
+                return this; // 不同 以当前为准
             }
             if (!partitioningProperties.isPresent()) {
-                return parent;
+                return parent; // 没有就以 parent 为准
             }
             if (!parent.partitioningProperties.isPresent()) {
-                return this;
+                return this; // parent 没有就以当前为准
             }
             return new Global(distributed, Optional.of(partitioningProperties.get().mergeWithParent(parent.partitioningProperties.get())));
         }
@@ -305,7 +305,7 @@ class PreferredProperties
     {
         private final Set<Symbol> partitioningColumns;
         private final Optional<Partitioning> partitioning; // Specific partitioning requested
-        private final boolean nullsAndAnyReplicated;
+        private final boolean nullsAndAnyReplicated;  // mt: ???
 
         private PartitioningProperties(Set<Symbol> partitioningColumns, Optional<Partitioning> partitioning, boolean nullsAndAnyReplicated)
         {
@@ -365,12 +365,12 @@ class PreferredProperties
 
             if (parent.partitioning.isPresent()) {
                 // If the parent has a partitioning preference, propagate parent only if the parent's partitioning columns satisfies our preference.
-                // Otherwise, ignore the parent since the parent will have to repartition anyways.
+                // Otherwise, ignore the parent since the parent will have to repartition anyways. // mt: 如果冲突（两个不兼容，this 的 没有全部包含 parent 的），就取this，忽略 parent 的 之后会enforce的
                 return partitioningColumns.containsAll(parent.partitioningColumns) ? parent : this;
             }
 
             // Otherwise partition on any common columns if available
-            Set<Symbol> common = Sets.intersection(partitioningColumns, parent.partitioningColumns);
+            Set<Symbol> common = Sets.intersection(partitioningColumns, parent.partitioningColumns); // mt: 取交集
             return common.isEmpty() ? this : partitioned(common).withNullsAndAnyReplicated(nullsAndAnyReplicated);
         }
 

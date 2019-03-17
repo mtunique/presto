@@ -38,7 +38,7 @@ import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
-
+// mt: ???
 @Immutable
 public final class Partitioning
 {
@@ -152,7 +152,7 @@ public final class Partitioning
                 // Normally, this would be a false condition, but if we happen to have an external
                 // mapping from the symbol to a constant value and that constant value matches the
                 // right value, then we are co-partitioned.
-                Optional<NullableValue> leftConstant = leftConstantMapping.apply(leftArgument.getSymbol());  // mt: p8 blue ?
+                Optional<NullableValue> leftConstant = leftConstantMapping.apply(leftArgument.getSymbol());  // mt: p8 blue
                 return leftConstant.isPresent() && leftConstant.get().equals(rightArgument.getConstant());
             }
         }
@@ -172,7 +172,7 @@ public final class Partitioning
     public boolean isPartitionedOn(Collection<Symbol> columns, Set<Symbol> knownConstants)
     {
         // mt: (2) p6
-        for (ArgumentBinding argument : arguments) {
+        for (ArgumentBinding argument : arguments) { // mt: 实际的
             // partitioned on (k_1, k_2, ..., k_n) => partitioned on (k_1, k_2, ..., k_n, k_n+1, ...)
             // can safely ignore all constant columns when comparing partition properties
             if (argument.isConstant()) {

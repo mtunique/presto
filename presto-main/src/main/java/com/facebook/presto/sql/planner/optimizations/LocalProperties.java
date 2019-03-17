@@ -94,7 +94,7 @@ public final class LocalProperties
      * - Optional.empty(): the property was satisfied completely
      * - non-empty: the (simplified) property that was not satisfied
      */
-    public static <T> List<Optional<LocalProperty<T>>> match(List<LocalProperty<T>> actuals, List<LocalProperty<T>> desired) // mt: 包括 order
+    public static <T> List<Optional<LocalProperty<T>>> match(List<LocalProperty<T>> actuals, List<LocalProperty<T>> desired) // mt: local match 包括 order
     {
         // After normalizing actuals, each symbol should only appear once
         PeekingIterator<LocalProperty<T>> actualIterator = peekingIterator(normalizeAndPrune(actuals).iterator());
@@ -106,7 +106,7 @@ public final class LocalProperties
             while (consumeMoreActuals && actualIterator.hasNext() && desiredProperty.isSimplifiedBy(actualIterator.peek())) { // mt: 实际的可以多 actual 冗余 (1) p5
                 constants.addAll(actualIterator.next().getColumns());
             }
-            Optional<LocalProperty<T>> simplifiedDesired = desiredProperty.withConstants(constants); // mt:
+            Optional<LocalProperty<T>> simplifiedDesired = desiredProperty.withConstants(constants); // mt: p6 (8) 比较难理解
             consumeMoreActuals &= !simplifiedDesired.isPresent(); // Only continue processing actuals if all previous desired properties were fully satisfied  mt: action 按顺序匹配 不成功就终止
             result.add(simplifiedDesired);
         }
@@ -132,6 +132,7 @@ public final class LocalProperties
     {
         List<Optional<LocalProperty<T>>> normalizedProperties = new ArrayList<>(localProperties.size());
         Set<T> constants = new HashSet<>();
+        // mt: 删除之前出现过的列, order 只保留第一个 (多个真的会不同吗
         for (LocalProperty<T> localProperty : localProperties) {
             normalizedProperties.add(localProperty.withConstants(constants)); // mt: remove redundant
             constants.addAll(localProperty.getColumns());

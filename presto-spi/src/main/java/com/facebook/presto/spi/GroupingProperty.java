@@ -66,7 +66,7 @@ public final class GroupingProperty<E>
     @Override
     public boolean isSimplifiedBy(LocalProperty<E> known)
     {
-        return known instanceof ConstantProperty || getColumns().containsAll(known.getColumns()); // mt: sorting prop 也可以 p6 (4)
+        return known instanceof ConstantProperty || getColumns().containsAll(known.getColumns()); // mt: p5 (1); sorting prop 也可以 p6 (4)
     }
 
     /**
